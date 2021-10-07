@@ -4,23 +4,28 @@
 import * as React from 'react'
 import {fetchPokemon, PokemonDataView, PokemonErrorBoundary} from '../pokemon'
 
-// 💰 use it like this: fetchPokemon(pokemonName).then(handleSuccess, handleFailure)
+const resource = createResource(fetchPokemon('pikachu'))
 
-let pokemon
-let error
+function createResource (promise) {
+  let data
+  let error
 
-// We don't need the app to be mounted to know that we want to fetch the pokemon
-// named "pikachu" so we can go ahead and do that right here.
-const pokemonName = Math.random() > 0.5 ? 'pikachu' : 'ddd'
-const pokemonPromise = fetchPokemon(pokemonName)
-.then(data => { pokemon = data }, e => { error = e })
+promise.then(resolvedData => {
+    data = resolvedData
+  }, e => { error = e })
+
+  return {
+    read: function () {
+      if (error) throw error
+      if (!data) throw promise
+      return data
+    }
+  }
+}
 
 function PokemonInfo() {
-  if (error) throw error
-  if (!pokemon) throw pokemonPromise
+  const pokemon = resource.read()
 
-  // if the code gets it this far, then the pokemon variable is defined and
-  // rendering can continue!
   return (
     <div>
       <div className="pokemon-info__img-wrapper">
