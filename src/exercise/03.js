@@ -23,9 +23,9 @@ function PokemonInfo({pokemonResource}) {
   )
 }
 
-// 🐨 create a SUSPENSE_CONFIG variable right here and configure timeoutMs to
-// whatever feels right to you, then try it out and tweak it until you're happy
-// with the experience.
+const SUSPENSE_CONFIG = {
+  timeoutMs: 3000
+}
 
 function createPokemonResource(pokemonName) {
   // 🦉 once you've finished the exercise, play around with the delay...
@@ -47,7 +47,7 @@ function createPokemonResource(pokemonName) {
 
 function App() {
   const [pokemonName, setPokemonName] = React.useState('')
-  // 🐨 add a useTransition hook here
+  const [startTransition, isPending] = React.useTransition(SUSPENSE_CONFIG)
   const [pokemonResource, setPokemonResource] = React.useState(null)
 
   React.useEffect(() => {
@@ -55,10 +55,10 @@ function App() {
       setPokemonResource(null)
       return
     }
-    // 🐨 wrap this next line in a startTransition call
-    setPokemonResource(createPokemonResource(pokemonName))
-    // 🐨 add startTransition to the deps list here
-  }, [pokemonName])
+    startTransition(() => {
+      setPokemonResource(createPokemonResource(pokemonName))
+    })
+  }, [pokemonName, startTransition])
 
   function handleSubmit(newPokemonName) {
     setPokemonName(newPokemonName)
@@ -72,25 +72,24 @@ function App() {
     <div className="pokemon-info-app">
       <PokemonForm pokemonName={pokemonName} onSubmit={handleSubmit} />
       <hr />
-      {/*
-        🐨 add inline styles here to set the opacity to 0.6 if the
-        useTransition above is pending
-      */}
-      <div className="pokemon-info">
-        {pokemonResource ? (
-          <PokemonErrorBoundary
-            onReset={handleReset}
-            resetKeys={[pokemonResource]}
-          >
-            <React.Suspense
-              fallback={<PokemonInfoFallback name={pokemonName} />}
+      <div
+        className={`pokemon-info ${isPending ? 'pokemon-loading' : ''}`}
+        style={{ opacity: isPending ? 0.6 : 1 }}
+      >
+        <React.Suspense
+          fallback={<PokemonInfoFallback name={pokemonName} />}
+        >
+          {pokemonResource ? (
+            <PokemonErrorBoundary
+              onReset={handleReset}
+              resetKeys={[pokemonResource]}
             >
-              <PokemonInfo pokemonResource={pokemonResource} />
-            </React.Suspense>
-          </PokemonErrorBoundary>
-        ) : (
-          'Submit a pokemon'
-        )}
+                <PokemonInfo pokemonResource={pokemonResource} />
+            </PokemonErrorBoundary>
+          ) : (
+            'Submit a pokemon'
+          )}
+        </React.Suspense>
       </div>
     </div>
   )
