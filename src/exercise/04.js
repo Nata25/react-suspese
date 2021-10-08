@@ -40,22 +40,28 @@ const PokemonCacheProvider = ({cacheTime, children}) => {
 
   React.useEffect(() => {
     const int = setInterval(() => {
-      console.log('clearing cache')
-      pokemonResourceCache.current = {}
+      for (const [key, value] of Object.entries(pokemonResourceCache.current)) {
+        if (value.expirationTime < Date.now()) {
+          delete pokemonResourceCache.current[key]
+        }
+      }
       setInterval(int)
-    }, cacheTime)
-    return () => { clearInterval(int)}
-  }, [cacheTime])
+    }, 1000)
+    return () => { clearInterval(int) }
+  }, [])
 
   const getPokemonResourceMemo = React.useCallback(
     function getPokemonResource (pokemonName) {
       let resource
       if (!pokemonResourceCache.current[pokemonName]) {
         resource = createPokemonResource(pokemonName)
-        pokemonResourceCache.current[pokemonName] = resource
+        pokemonResourceCache.current[pokemonName] = {
+          resource,
+          expirationTime: Date.now() + cacheTime
+        }
       }
-      return pokemonResourceCache.current[pokemonName]
-  }, [])
+      return pokemonResourceCache.current[pokemonName].resource
+  }, [cacheTime])
 
   return (
     <CacheContext.Provider value={getPokemonResourceMemo}>
