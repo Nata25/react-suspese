@@ -8,6 +8,7 @@ import {
   PokemonForm,
   PokemonDataView,
   PokemonErrorBoundary,
+  getImageUrlForPokemon
 } from '../pokemon'
 import {createResource} from '../utils'
 
@@ -16,13 +17,6 @@ import {createResource} from '../utils'
 // in your DevTools "Network Tab". We're relying on that cache for this
 // approach to work!
 // ❗❗❗❗
-
-// we need to make a place to store the resources outside of render so
-// 🐨 create "cache" object here.
-const imgSrcResourceCache = {}
-
-// 🐨 create an Img component that renders a regular <img /> and accepts a src
-// prop and forwards on any remaining props.
 
 function preloadImage (src) {
   const img = new Image()
@@ -33,24 +27,14 @@ function preloadImage (src) {
     img.src = src
   })
 }
-const Img = ({src, alt, ...props}) => {
-  let resource = imgSrcResourceCache[src]
-  if (!resource) {
-    resource = createResource(preloadImage(src))
-    imgSrcResourceCache[src] = resource
-  }
-  return (
-    <img src={resource.read()} alt={alt} {...props} />
-  )
-}
 
 function PokemonInfo({pokemonResource}) {
-  const pokemon = pokemonResource.read()
+  const pokemon = pokemonResource.data.read()
+  const image = pokemonResource.image.read()
   return (
     <div>
       <div className="pokemon-info__img-wrapper">
-        {/* 🐨 swap this img for your new Img component */}
-        <Img src={pokemon.image} alt={pokemon.name} />
+        <img src={image} alt={pokemon.name} />
       </div>
       <PokemonDataView pokemon={pokemon} />
     </div>
@@ -69,7 +53,12 @@ function getPokemonResource(name) {
   const lowerName = name.toLowerCase()
   let resource = pokemonResourceCache[lowerName]
   if (!resource) {
-    resource = createPokemonResource(lowerName)
+    const resourceData = createPokemonResource(lowerName)
+    const resourceImage = createImageResource(lowerName)
+    resource = {
+      data: resourceData,
+      image: resourceImage
+    }
     pokemonResourceCache[lowerName] = resource
   }
   return resource
@@ -77,6 +66,11 @@ function getPokemonResource(name) {
 
 function createPokemonResource(pokemonName) {
   return createResource(fetchPokemon(pokemonName))
+}
+
+function createImageResource(pokemonName) {
+  const imageSrc = getImageUrlForPokemon(pokemonName)
+  return createResource(preloadImage(imageSrc))
 }
 
 function App() {
