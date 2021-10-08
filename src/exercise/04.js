@@ -35,8 +35,17 @@ function createPokemonResource(pokemonName) {
 
 const CacheContext = React.createContext(null)
 
-const PokemonCacheProvider = ({children}) => {  
+const PokemonCacheProvider = ({cacheTime, children}) => {  
   const pokemonResourceCache = React.useRef({})
+
+  React.useEffect(() => {
+    const int = setInterval(() => {
+      console.log('clearing cache')
+      pokemonResourceCache.current = {}
+      setInterval(int)
+    }, cacheTime)
+    return () => { clearInterval(int)}
+  }, [cacheTime])
 
   const getPokemonResourceMemo = React.useCallback(
     function getPokemonResource (pokemonName) {
@@ -109,7 +118,7 @@ function App() {
 
 function AppWithProvider() {
   return (
-    <PokemonCacheProvider>
+    <PokemonCacheProvider cacheTime={10000}>
       <App />
     </PokemonCacheProvider>
   )
